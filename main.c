@@ -96,14 +96,12 @@ execute(struct Cpu *cpu, struct Mem *mem, u32 cycles)
         {
             Byte value = fetch_byte(cpu, mem, &cycles);
             cpu->A = value;
-            if(cpu->A == 0)
-            {
-                cpu->Z;
-            }
-            if((cpu->A & 0b10000000) > 0)
-            {
-                cpu->N;
-            }
+            cpu->Z = (cpu->A == 0); // Set Z to 1 if A == 0.
+            cpu->N = (cpu->A & 0b10000000) > 0;
+        }
+        else
+        {
+            printf("Unrecognized instruction: %d\n" , ins);
         }
     }
 }
@@ -115,7 +113,10 @@ main(void)
     struct Cpu cpu;
 
     reset(&cpu, &mem);
-    execute(&cpu, &mem, 2);
+
+    mem.data[0xFFFC] = cpu.INS_LDA_IM;
+    mem.data[0xFFFD] = 0x42;
+
     execute(&cpu, &mem, 2);
 
     return 0;
