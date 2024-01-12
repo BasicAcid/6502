@@ -2,6 +2,9 @@
 #include <stdlib.h>
 #include <stdint.h>
 
+// Based on this tutorial:
+// https://www.youtube.com/watch?v=qJgsuQoy9bc&list=PLLwK93hM93Z13TRzPx9JqTIn33feefl37
+
 typedef uint32_t u32;
 typedef int32_t i32;
 typedef uint16_t u16;
@@ -37,6 +40,7 @@ struct Cpu
 
     // Opcodes.
     Byte INS_LDA_IM; // Load accumulator immediate mode.
+    Byte INS_LDA_ZP; // Zero page.
 };
 
 void
@@ -70,6 +74,7 @@ reset(struct Cpu *cpu, struct Mem *mem)
     cpu->N = 0;
 
     cpu->INS_LDA_IM = 0xA9;
+    cpu->INS_LDA_ZP = 0xA5;
 
     init_mem(mem);
 }
@@ -78,10 +83,17 @@ Byte
 fetch_byte(struct Cpu *cpu, struct Mem *mem, u32 *cycles)
 {
     Byte data = mem->data[cpu->PC];
-
     cpu->PC++;
     (*cycles)--;
+    return data;
+}
 
+// Like fetch_byte but does not increment the program counter PC.
+Byte
+read_byte(struct Mem *mem, u32 *cycles, Byte addr)
+{
+    Byte data = mem->data[addr];
+    (*cycles)--;
     return data;
 }
 
@@ -99,6 +111,13 @@ execute(struct Cpu *cpu, struct Mem *mem, u32 cycles)
             cpu->Z = (cpu->A == 0); // Set Z to 1 if A == 0.
             cpu->N = (cpu->A & 0b10000000) > 0;
         }
+        if(ins == cpu->INS_LDA_ZP)
+        {
+            Byte zero_page_addr = fetch_byte(cpu, mem, &cycles);
+            cpu->A = read_byte(mem, &cycles, zero_page_addr);
+            cpu->Z = (cpu->A == 0);
+            cpu->N = (cpu->A & 0b10000000) > 0;
+        }
         else
         {
             printf("Unrecognized instruction: %d\n" , ins);
@@ -114,10 +133,14 @@ main(void)
 
     reset(&cpu, &mem);
 
-    mem.data[0xFFFC] = cpu.INS_LDA_IM;
-    mem.data[0xFFFD] = 0x42;
+    /* mem.data[0xFFFC] = cpu.INS_LDA_IM; */
+    /* mem.data[0xFFFD] = 0x42; */
 
-    execute(&cpu, &mem, 2);
+    mem.data[0xFFFC] = cpu.INS_LDA_ZP;
+    mem.data[0xFFFD] = 0x42;
+    mem.data[0x0042] = 0x84;
+
+    execute(&cpu, &mem, 3);
 
     return 0;
 }
