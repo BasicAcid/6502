@@ -1,8 +1,21 @@
+#include <stdio.h>
 #include <stdlib.h>
-#include <stdlib.h>
+#include <stdint.h>
 
-typedef unsigned char Byte;
-typedef unsigned short Word;
+typedef uint32_t u32;
+typedef int32_t i32;
+typedef uint16_t u16;
+typedef int16_t i16;
+typedef uint8_t u8;
+typedef int8_t i8;
+
+typedef u8 Byte;
+typedef u16 Word;
+
+struct Mem
+{
+    Byte Data[1024 * 64]; // Max memory.
+};
 
 struct CPU
 {
@@ -23,17 +36,46 @@ struct CPU
     Byte N : 1;
 };
 
-void reset(struct CPU *cpu)
+void
+init_mem(struct Mem *mem)
 {
-    cpu->PC = 0XFFFC;
+    u32 max_mem = 1024 * 64;
+
+    for (u32 i = 0; i < max_mem; i++)
+    {
+        mem->Data[i] = 0;
+    }
 }
 
-int main(void)
+// See: https://c64-wiki.com/wiki/Reset_(Process)
+void
+reset(struct CPU *cpu, struct Mem *mem)
 {
+    cpu->PC = 0XFFFC; // FFFC is the 6052 reset vector.
+    cpu->SP = 0X00;
 
+    cpu->A = 0X00;
+    cpu->X = 0X00;
+    cpu->Y = 0X00;
+
+    cpu->C = 0;
+    cpu->Z = 0;
+    cpu->I = 0;
+    cpu->D = 0;
+    cpu->B = 0;
+    cpu->V = 0;
+    cpu->N = 0;
+
+    init_mem(mem);
+}
+
+int
+main(void)
+{
+    struct Mem mem;
     struct CPU cpu;
 
-    reset(&cpu);
+    reset(&cpu, &mem);
 
     return 0;
 }
