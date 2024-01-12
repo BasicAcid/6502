@@ -36,7 +36,7 @@ struct Cpu
     Byte N : 1;
 
     // Opcodes.
-    Byte INS_LDA_IM;
+    Byte INS_LDA_IM; // Load accumulator immediate mode.
 };
 
 void
@@ -92,10 +92,18 @@ execute(struct Cpu *cpu, struct Mem *mem, u32 cycles)
     {
         Byte ins = fetch_byte(cpu, mem, &cycles);
 
-        if(cpu->INS_LDA_IM)
+        if(ins == cpu->INS_LDA_IM)
         {
             Byte value = fetch_byte(cpu, mem, &cycles);
             cpu->A = value;
+            if(cpu->A == 0)
+            {
+                cpu->Z;
+            }
+            if((cpu->A & 0b10000000) > 0)
+            {
+                cpu->N;
+            }
         }
     }
 }
