@@ -41,6 +41,9 @@ struct Cpu
     // Opcodes.
     Byte INS_LDA_IM; // Load accumulator immediate mode.
     Byte INS_LDA_ZP; // Zero page.
+    Byte INS_LDA_ZPX; // Zero page.X.
+    Byte INS_JSR;
+
 };
 
 void
@@ -75,6 +78,7 @@ reset(struct Cpu *cpu, struct Mem *mem)
 
     cpu->INS_LDA_IM = 0xA9;
     cpu->INS_LDA_ZP = 0xA5;
+    cpu->INS_LDA_ZPX = 0xB5;
 
     init_mem(mem);
 }
@@ -85,6 +89,18 @@ fetch_byte(struct Cpu *cpu, struct Mem *mem, u32 *cycles)
     Byte data = mem->data[cpu->PC];
     cpu->PC++;
     (*cycles)--;
+    return data;
+}
+
+Word
+fetch_word(struct Cpu *cpu, struct Mem *mem, u32 *cycles)
+{
+    Word data = mem->data[cpu->PC];
+    cpu->PC++;
+
+    data |= (mem->data[cpu->PC] << 8);
+    cpu->PC++;
+    (*cycles) += 2;
     return data;
 }
 
@@ -117,6 +133,22 @@ execute(struct Cpu *cpu, struct Mem *mem, u32 cycles)
             cpu->A = read_byte(mem, &cycles, zero_page_addr);
             cpu->Z = (cpu->A == 0);
             cpu->N = (cpu->A & 0b10000000) > 0;
+        }
+        if(ins == cpu->INS_LDA_ZPX)
+        {
+            Byte zero_page_addr = fetch_byte(cpu, mem, &cycles);
+            zero_page_addr += cpu->X;
+            cycles--;
+            cpu->A = read_byte(mem, &cycles, zero_page_addr);
+            cpu->Z = (cpu->A == 0);
+            cpu->N = (cpu->A & 0b10000000) > 0;
+        }
+        if(ins == cpu->INS_JSR)
+        {
+            Word sub_addr = fetch_word(cpu, mem, &cycles);
+            mem->data[cpu->SP] = cpu->PC - 1;
+            cycles--;
+            cpu->PC = sub_addr;
         }
         else
         {
