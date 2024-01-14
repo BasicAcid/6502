@@ -17,32 +17,32 @@ typedef u16 Word;
 
 struct Mem
 {
-    Byte data[1024 * 64]; // Max memory.
+    Byte data[65536]; // Max memory.
 };
 
 struct Cpu
 {
-    Word PC; // Program Counter.
-    Byte SP; // Stack Pointer.
+    Word pc; // Program Counter.
+    Byte sp; // Stack Pointer.
 
-    Byte A; // Accumulator.
-    Byte X; // Index Register X.
-    Byte Y; // Index Register Y.
+    Byte a; // Accumulator.
+    Byte x; // Index Register X.
+    Byte y; // Index Register Y.
 
     // Status flags.
-    Byte C : 1;
-    Byte Z : 1;
-    Byte I : 1;
-    Byte D : 1;
-    Byte B : 1;
-    Byte V : 1;
-    Byte N : 1;
+    Byte c : 1;
+    Byte z : 1;
+    Byte i : 1;
+    Byte d : 1;
+    Byte b : 1;
+    Byte v : 1;
+    Byte n : 1;
 
     // Opcodes.
-    Byte INS_LDA_IM; // Load accumulator immediate mode.
-    Byte INS_LDA_ZP; // Zero page.
-    Byte INS_LDA_ZPX; // Zero page.X.
-    Byte INS_JSR;
+    Byte ins_lda_im; // Load accumulator immediate mode.
+    Byte ins_lda_zp; // Zero page.
+    Byte ins_lda_zpx; // Zero page.X.
+    Byte ins_jsr;
 
 };
 
@@ -51,7 +51,7 @@ init_mem(struct Mem *mem)
 {
     u32 max_mem = 1024 * 64;
 
-    for(u32 i = 0; i < max_mem; i++)
+    for(u32 i = 0; i < max_mem; ++i)
     {
         mem->data[i] = 0;
     }
@@ -61,24 +61,24 @@ init_mem(struct Mem *mem)
 void
 reset(struct Cpu *cpu, struct Mem *mem)
 {
-    cpu->PC = 0XFFFC; // FFFC is the 6052 reset vector.
-    cpu->SP = 0X00;
+    cpu->pc = 0xfffc; // fffc is the 6052 reset vector.
+    cpu->sp = 0x00;
 
-    cpu->A = 0X00;
-    cpu->X = 0X00;
-    cpu->Y = 0X00;
+    cpu->a = 0x00;
+    cpu->x = 0x00;
+    cpu->y = 0x00;
 
-    cpu->C = 0;
-    cpu->Z = 0;
-    cpu->I = 0;
-    cpu->D = 0;
-    cpu->B = 0;
-    cpu->V = 0;
-    cpu->N = 0;
+    cpu->c = 0;
+    cpu->z = 0;
+    cpu->i = 0;
+    cpu->d = 0;
+    cpu->b = 0;
+    cpu->v = 0;
+    cpu->n = 0;
 
-    cpu->INS_LDA_IM = 0xA9;
-    cpu->INS_LDA_ZP = 0xA5;
-    cpu->INS_LDA_ZPX = 0xB5;
+    cpu->ins_lda_im = 0xa9;
+    cpu->ins_lda_zp = 0xa5;
+    cpu->ins_lda_zpx = 0xb5;
 
     init_mem(mem);
 }
@@ -86,8 +86,8 @@ reset(struct Cpu *cpu, struct Mem *mem)
 Byte
 fetch_byte(struct Cpu *cpu, struct Mem *mem, u32 *cycles)
 {
-    Byte data = mem->data[cpu->PC];
-    cpu->PC++;
+    Byte data = mem->data[cpu->pc];
+    cpu->pc++;
     (*cycles)--;
     return data;
 }
@@ -95,20 +95,20 @@ fetch_byte(struct Cpu *cpu, struct Mem *mem, u32 *cycles)
 Word
 fetch_word(struct Cpu *cpu, struct Mem *mem, u32 *cycles)
 {
-    Word data = mem->data[cpu->PC];
-    cpu->PC++;
+    Word data = mem->data[cpu->pc];
+    cpu->pc++;
 
-    data |= (mem->data[cpu->PC] << 8);
-    cpu->PC++;
+    data |= (mem->data[cpu->pc] << 8);
+    cpu->pc++;
     (*cycles) += 2;
     return data;
 }
 
 void
-write_word(Word data, struct Mem *mem, u32 *cycles)
+write_word(Word addr, struct Mem *mem, u32 *cycles)
 {
-    data[mem->data] = data & 0xFF;
-    data[mem->data + 1] = (data >> 8);
+    mem->data[addr] = addr & 0xFF;
+    mem->data[addr + 1] = (addr >> 8);
     (*cycles) -= 2;
 }
 
@@ -128,34 +128,35 @@ execute(struct Cpu *cpu, struct Mem *mem, u32 cycles)
     {
         Byte ins = fetch_byte(cpu, mem, &cycles);
 
-        if(ins == cpu->INS_LDA_IM)
+        if(ins == cpu->ins_lda_im)
         {
             Byte value = fetch_byte(cpu, mem, &cycles);
-            cpu->A = value;
-            cpu->Z = (cpu->A == 0); // Set Z to 1 if A == 0.
-            cpu->N = (cpu->A & 0b10000000) > 0;
+            cpu->a = value;
+            cpu->z = (cpu->a == 0); // Set Z to 1 if A == 0.
+            cpu->n = (cpu->a & 0b10000000) > 0;
         }
-        if(ins == cpu->INS_LDA_ZP)
+        else if(ins == cpu->ins_lda_zp)
         {
             Byte zero_page_addr = fetch_byte(cpu, mem, &cycles);
-            cpu->A = read_byte(mem, &cycles, zero_page_addr);
-            cpu->Z = (cpu->A == 0);
-            cpu->N = (cpu->A & 0b10000000) > 0;
+            cpu->a = read_byte(mem, &cycles, zero_page_addr);
+            cpu->z = (cpu->a == 0);
+            cpu->n = (cpu->a & 0b10000000) > 0;
         }
-        if(ins == cpu->INS_LDA_ZPX)
+        else if(ins == cpu->ins_lda_zpx)
         {
             Byte zero_page_addr = fetch_byte(cpu, mem, &cycles);
-            zero_page_addr += cpu->X;
+            zero_page_addr += cpu->x;
             cycles--;
-            cpu->A = read_byte(mem, &cycles, zero_page_addr);
-            cpu->Z = (cpu->A == 0);
-            cpu->N = (cpu->A & 0b10000000) > 0;
+            cpu->a = read_byte(mem, &cycles, zero_page_addr);
+            cpu->z = (cpu->a == 0);
+            cpu->n = (cpu->a & 0b10000000) > 0;
         }
-        if(ins == cpu->INS_JSR)
+        else if(ins == cpu->ins_jsr)
         {
             Word sub_addr = fetch_word(cpu, mem, &cycles);
+            write_word(cpu->pc - 1, mem, &cycles);
+            cpu->pc = sub_addr;
             cycles--;
-            cpu->PC = sub_addr;
         }
         else
         {
@@ -172,14 +173,21 @@ main(void)
 
     reset(&cpu, &mem);
 
-    /* mem.data[0xFFFC] = cpu.INS_LDA_IM; */
-    /* mem.data[0xFFFD] = 0x42; */
-
-    mem.data[0xFFFC] = cpu.INS_LDA_ZP;
+    mem.data[0xfffc] = cpu.ins_lda_im;
+    //mem.data[0xfffc] = 0xa9;
     mem.data[0xFFFD] = 0x42;
-    mem.data[0x0042] = 0x84;
 
-    execute(&cpu, &mem, 3);
+    /* mem.data[0xfffc] = cpu.ins_lda_zp; */
+    /* mem.data[0xfffd] = 0x42; */
+    /* mem.data[0x0042] = 0x84; */
+
+    /* mem.data[0xfffc] = cpu.ins_jsr; */
+    /* mem.data[0xfffd] = 0x42; */
+    /* mem.data[0xfffe] = 0x42; */
+    /* mem.data[0x4242] = cpu.ins_lda_im; */
+    /* mem.data[0x4243] = 0x84; */
+
+    execute(&cpu, &mem, 2);
 
     return 0;
 }
