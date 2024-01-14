@@ -104,6 +104,14 @@ fetch_word(struct Cpu *cpu, struct Mem *mem, u32 *cycles)
     return data;
 }
 
+void
+write_word(Word data, struct Mem *mem, u32 *cycles)
+{
+    data[mem->data] = data & 0xFF;
+    data[mem->data + 1] = (data >> 8);
+    (*cycles) -= 2;
+}
+
 // Like fetch_byte but does not increment the program counter PC.
 Byte
 read_byte(struct Mem *mem, u32 *cycles, Byte addr)
@@ -146,7 +154,6 @@ execute(struct Cpu *cpu, struct Mem *mem, u32 cycles)
         if(ins == cpu->INS_JSR)
         {
             Word sub_addr = fetch_word(cpu, mem, &cycles);
-            mem->data[cpu->SP] = cpu->PC - 1;
             cycles--;
             cpu->PC = sub_addr;
         }
