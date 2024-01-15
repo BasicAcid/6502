@@ -123,7 +123,7 @@ read_byte(struct Mem *mem, u32 *cycles, Byte addr)
     return data;
 }
 
-i32
+u32
 execute(struct Cpu *cpu, struct Mem *mem, u32 cycles)
 {
     u32 requested_cycles = cycles;
@@ -181,7 +181,7 @@ test_1(struct Cpu *cpu, struct Mem *mem)
     mem->data[0xfffc] = cpu->ins_lda_im;
     mem->data[0xFFFD] = 0x42;
 
-    i32 nb_cycles = execute(cpu, mem, 2);
+    u32 nb_cycles = execute(cpu, mem, 2);
 
     assert(nb_cycles == 2);
 
@@ -206,7 +206,9 @@ test_2(struct Cpu *cpu, struct Mem *mem)
     mem->data[0xfffd] = 0x42;
     mem->data[0x0042] = 0x84;
 
-    execute(cpu, mem, 3);
+    u32 nb_cycles = execute(cpu, mem, 3);
+
+    assert(nb_cycles == 3);
 
     assert(cpu->a == 0x84);
     assert(cpu->c == 0);
@@ -230,7 +232,9 @@ test_3(struct Cpu *cpu, struct Mem *mem)
     mem->data[0xfffd] = 0x42;;
     mem->data[0x0047] = 0x37;
 
-    execute(cpu, mem, 4);
+    u32 nb_cycles = execute(cpu, mem, 4);
+
+    assert(nb_cycles == 4);
 
     assert(cpu->a == 0x37);
     assert(cpu->c == 0);
@@ -253,7 +257,9 @@ test_4(struct Cpu *cpu, struct Mem *mem)
     mem->data[0xfffd] = 0x80;;
     mem->data[0x007f] = 0x37;
 
-    execute(cpu, mem, 4);
+    u32 nb_cycles = execute(cpu, mem, 4);
+
+    assert(nb_cycles == 4);
 
     assert(cpu->a == 0x37);
     assert(cpu->c == 0);
