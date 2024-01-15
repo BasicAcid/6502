@@ -86,7 +86,7 @@ reset(struct Cpu *cpu, struct Mem *mem)
 }
 
 Byte
-fetch_byte(struct Cpu *cpu, struct Mem *mem, u32 *cycles)
+fetch_byte(struct Cpu *cpu, struct Mem *mem, i32 *cycles)
 {
     Byte data = mem->data[cpu->pc];
     cpu->pc++;
@@ -95,7 +95,7 @@ fetch_byte(struct Cpu *cpu, struct Mem *mem, u32 *cycles)
 }
 
 Word
-fetch_word(struct Cpu *cpu, struct Mem *mem, u32 *cycles)
+fetch_word(struct Cpu *cpu, struct Mem *mem, i32 *cycles)
 {
     Word data = mem->data[cpu->pc];
     cpu->pc++;
@@ -107,7 +107,7 @@ fetch_word(struct Cpu *cpu, struct Mem *mem, u32 *cycles)
 }
 
 void
-write_word(Word addr, struct Mem *mem, u32 *cycles)
+write_word(Word addr, struct Mem *mem, i32 *cycles)
 {
     mem->data[addr] = addr & 0xFF;
     mem->data[addr + 1] = (addr >> 8);
@@ -116,17 +116,17 @@ write_word(Word addr, struct Mem *mem, u32 *cycles)
 
 // Like fetch_byte but does not increment the program counter PC.
 Byte
-read_byte(struct Mem *mem, u32 *cycles, Byte addr)
+read_byte(struct Mem *mem, i32 *cycles, Byte addr)
 {
     Byte data = mem->data[addr];
     (*cycles)--;
     return data;
 }
 
-u32
-execute(struct Cpu *cpu, struct Mem *mem, u32 cycles)
+i32
+execute(struct Cpu *cpu, struct Mem *mem, i32 cycles)
 {
-    u32 requested_cycles = cycles;
+    i32 requested_cycles = cycles;
 
     while(cycles > 0)
     {
@@ -181,7 +181,7 @@ test_1(struct Cpu *cpu, struct Mem *mem)
     mem->data[0xfffc] = cpu->ins_lda_im;
     mem->data[0xFFFD] = 0x42;
 
-    u32 nb_cycles = execute(cpu, mem, 2);
+    i32 nb_cycles = execute(cpu, mem, 2);
 
     assert(nb_cycles == 2);
 
@@ -206,7 +206,7 @@ test_2(struct Cpu *cpu, struct Mem *mem)
     mem->data[0xfffd] = 0x42;
     mem->data[0x0042] = 0x84;
 
-    u32 nb_cycles = execute(cpu, mem, 3);
+    i32 nb_cycles = execute(cpu, mem, 3);
 
     assert(nb_cycles == 3);
 
@@ -232,7 +232,7 @@ test_3(struct Cpu *cpu, struct Mem *mem)
     mem->data[0xfffd] = 0x42;;
     mem->data[0x0047] = 0x37;
 
-    u32 nb_cycles = execute(cpu, mem, 4);
+    i32 nb_cycles = execute(cpu, mem, 4);
 
     assert(nb_cycles == 4);
 
@@ -257,7 +257,7 @@ test_4(struct Cpu *cpu, struct Mem *mem)
     mem->data[0xfffd] = 0x80;;
     mem->data[0x007f] = 0x37;
 
-    u32 nb_cycles = execute(cpu, mem, 4);
+    i32 nb_cycles = execute(cpu, mem, 4);
 
     assert(nb_cycles == 4);
 
