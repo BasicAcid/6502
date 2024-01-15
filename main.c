@@ -123,9 +123,11 @@ read_byte(struct Mem *mem, u32 *cycles, Byte addr)
     return data;
 }
 
-void
+i32
 execute(struct Cpu *cpu, struct Mem *mem, u32 cycles)
 {
+    u32 requested_cycles = cycles;
+
     while(cycles > 0)
     {
         Byte ins = fetch_byte(cpu, mem, &cycles);
@@ -165,8 +167,11 @@ execute(struct Cpu *cpu, struct Mem *mem, u32 cycles)
             printf("Unrecognized instruction: %d\n" , ins);
         }
     }
+    // Return the number of cycles used.
+    return requested_cycles - cycles;
 }
 
+// LDA Immediate mode: load value into the A register.
 void
 test_1(struct Cpu *cpu, struct Mem *mem)
 {
@@ -176,7 +181,9 @@ test_1(struct Cpu *cpu, struct Mem *mem)
     mem->data[0xfffc] = cpu->ins_lda_im;
     mem->data[0xFFFD] = 0x42;
 
-    execute(cpu, mem, 2);
+    i32 nb_cycles = execute(cpu, mem, 2);
+
+    assert(nb_cycles == 2);
 
     assert(cpu->a == 0x42);
     assert(cpu->c == 0);
@@ -188,6 +195,7 @@ test_1(struct Cpu *cpu, struct Mem *mem)
     assert(cpu->n == 0);
 }
 
+// LDA Zero Page: load value at a specific address into the A register.
 void
 test_2(struct Cpu *cpu, struct Mem *mem)
 {
@@ -210,12 +218,12 @@ test_2(struct Cpu *cpu, struct Mem *mem)
     assert(cpu->n == 1);
 }
 
+// LDA Zero Page X: load value at a specific address into the A register.
 void
 test_3(struct Cpu *cpu, struct Mem *mem)
 {
     reset(cpu, mem);
 
-    // 9 cycles.
     cpu->x = 5;
 
     mem->data[0xfffc] = cpu->ins_lda_zpx;
@@ -239,7 +247,6 @@ test_4(struct Cpu *cpu, struct Mem *mem)
 {
     reset(cpu, mem);
 
-    // 9 cycles.
     cpu->x = 0xff;
 
     mem->data[0xfffc] = cpu->ins_lda_zpx;
