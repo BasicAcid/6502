@@ -171,21 +171,42 @@ execute(struct Cpu *cpu, struct Mem *mem, i32 cycles)
     return requested_cycles - cycles;
 }
 
-// LDA Immediate mode: load value into the A register.
+// Zero cycles test.
 void
-test_1(struct Cpu *cpu, struct Mem *mem)
+test_zero_cycles(struct Cpu *cpu, struct Mem *mem)
 {
-    // 2 cycles.
+    reset(cpu, mem);
+    i32 nb_cycles = execute(cpu, mem, 0);
+    assert(nb_cycles == 0);
+}
+
+void
+test_full_cycle(struct Cpu *cpu, struct Mem *mem)
+{
     reset(cpu, mem);
 
     mem->data[0xfffc] = cpu->ins_lda_im;
-    mem->data[0xFFFD] = 0x42;
+    mem->data[0xfffd] = 0x42;
+
+    i32 nb_cycles = execute(cpu, mem, 1);
+
+    assert(nb_cycles == 2);
+}
+
+// LDA Immediate mode: load value into the A register.
+void
+test_lda_im(struct Cpu *cpu, struct Mem *mem)
+{
+    reset(cpu, mem);
+
+    mem->data[0xfffc] = cpu->ins_lda_im;
+    mem->data[0xfffd] = 0x42;
 
     i32 nb_cycles = execute(cpu, mem, 2);
 
     assert(nb_cycles == 2);
-
     assert(cpu->a == 0x42);
+
     assert(cpu->c == 0);
     assert(cpu->z == 0);
     assert(cpu->i == 0);
@@ -197,11 +218,10 @@ test_1(struct Cpu *cpu, struct Mem *mem)
 
 // LDA Zero Page: load value at a specific address into the A register.
 void
-test_2(struct Cpu *cpu, struct Mem *mem)
+test_lda_zp(struct Cpu *cpu, struct Mem *mem)
 {
     reset(cpu, mem);
 
-    // 3 cycles.
     mem->data[0xfffc] = cpu->ins_lda_zp;
     mem->data[0xfffd] = 0x42;
     mem->data[0x0042] = 0x84;
@@ -209,8 +229,8 @@ test_2(struct Cpu *cpu, struct Mem *mem)
     i32 nb_cycles = execute(cpu, mem, 3);
 
     assert(nb_cycles == 3);
-
     assert(cpu->a == 0x84);
+
     assert(cpu->c == 0);
     assert(cpu->z == 0);
     assert(cpu->i == 0);
@@ -222,7 +242,7 @@ test_2(struct Cpu *cpu, struct Mem *mem)
 
 // LDA Zero Page X: load value at a specific address into the A register.
 void
-test_3(struct Cpu *cpu, struct Mem *mem)
+test_lda_zp_x(struct Cpu *cpu, struct Mem *mem)
 {
     reset(cpu, mem);
 
@@ -235,8 +255,8 @@ test_3(struct Cpu *cpu, struct Mem *mem)
     i32 nb_cycles = execute(cpu, mem, 4);
 
     assert(nb_cycles == 4);
-
     assert(cpu->a == 0x37);
+
     assert(cpu->c == 0);
     assert(cpu->z == 0);
     assert(cpu->i == 0);
@@ -247,7 +267,7 @@ test_3(struct Cpu *cpu, struct Mem *mem)
 }
 
 void
-test_4(struct Cpu *cpu, struct Mem *mem)
+test_lda_zp_x_2(struct Cpu *cpu, struct Mem *mem)
 {
     reset(cpu, mem);
 
@@ -260,8 +280,8 @@ test_4(struct Cpu *cpu, struct Mem *mem)
     i32 nb_cycles = execute(cpu, mem, 4);
 
     assert(nb_cycles == 4);
-
     assert(cpu->a == 0x37);
+
     assert(cpu->c == 0);
     assert(cpu->z == 0);
     assert(cpu->i == 0);
@@ -296,13 +316,17 @@ main(void)
     struct Mem mem;
     struct Cpu cpu;
 
-    test_1(&cpu, &mem);
+    test_zero_cycles(&cpu, &mem);
 
-    test_2(&cpu, &mem);
+    test_full_cycle(&cpu, &mem);
 
-    test_3(&cpu, &mem);
+    test_lda_im(&cpu, &mem);
 
-    test_4(&cpu, &mem);
+    test_lda_zp(&cpu, &mem);
+
+    test_lda_zp_x(&cpu, &mem);
+
+    test_lda_zp_x_2(&cpu, &mem);
 
     return 0;
 }
