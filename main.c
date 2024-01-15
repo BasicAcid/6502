@@ -15,9 +15,11 @@ typedef int8_t i8;
 typedef u8 Byte;
 typedef u16 Word;
 
+#define MAX_MEM 65536
+
 struct Mem
 {
-    Byte data[65536]; // Max memory.
+    Byte data[MAX_MEM]; // Max memory.
 };
 
 struct Cpu
@@ -49,7 +51,7 @@ struct Cpu
 void
 init_mem(struct Mem *mem)
 {
-    u32 max_mem = 1024 * 64;
+    u32 max_mem = MAX_MEM;
 
     for(u32 i = 0; i < max_mem; ++i)
     {
@@ -165,6 +167,16 @@ execute(struct Cpu *cpu, struct Mem *mem, u32 cycles)
     }
 }
 
+void
+test_1()
+{
+    // 2 cycles.
+    mem.data[0xfffc] = cpu.ins_lda_im;
+    mem.data[0xFFFD] = 0x42;
+
+
+}
+
 int
 main(void)
 {
@@ -173,14 +185,13 @@ main(void)
 
     reset(&cpu, &mem);
 
-    mem.data[0xfffc] = cpu.ins_lda_im;
-    //mem.data[0xfffc] = 0xa9;
-    mem.data[0xFFFD] = 0x42;
 
+    // 3 cycles.
     /* mem.data[0xfffc] = cpu.ins_lda_zp; */
     /* mem.data[0xfffd] = 0x42; */
     /* mem.data[0x0042] = 0x84; */
 
+    // 9 cycles.
     /* mem.data[0xfffc] = cpu.ins_jsr; */
     /* mem.data[0xfffd] = 0x42; */
     /* mem.data[0xfffe] = 0x42; */
