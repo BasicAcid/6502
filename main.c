@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <assert.h>
 
 // Based on this tutorial:
 // https://www.youtube.com/watch?v=qJgsuQoy9bc&list=PLLwK93hM93Z13TRzPx9JqTIn33feefl37
@@ -45,7 +46,6 @@ struct Cpu
     Byte ins_lda_zp; // Zero page.
     Byte ins_lda_zpx; // Zero page.X.
     Byte ins_jsr;
-
 };
 
 void
@@ -168,14 +168,114 @@ execute(struct Cpu *cpu, struct Mem *mem, u32 cycles)
 }
 
 void
-test_1()
+test_1(struct Cpu *cpu, struct Mem *mem)
 {
     // 2 cycles.
-    mem.data[0xfffc] = cpu.ins_lda_im;
-    mem.data[0xFFFD] = 0x42;
+    reset(cpu, mem);
 
+    mem->data[0xfffc] = cpu->ins_lda_im;
+    mem->data[0xFFFD] = 0x42;
 
+    execute(cpu, mem, 2);
+
+    assert(cpu->a == 0x42);
+    assert(cpu->c == 0);
+    assert(cpu->z == 0);
+    assert(cpu->i == 0);
+    assert(cpu->d == 0);
+    assert(cpu->b == 0);
+    assert(cpu->v == 0);
+    assert(cpu->n == 0);
 }
+
+void
+test_2(struct Cpu *cpu, struct Mem *mem)
+{
+    reset(cpu, mem);
+
+    // 3 cycles.
+    mem->data[0xfffc] = cpu->ins_lda_zp;
+    mem->data[0xfffd] = 0x42;
+    mem->data[0x0042] = 0x84;
+
+    execute(cpu, mem, 3);
+
+    assert(cpu->a == 0x84);
+    assert(cpu->c == 0);
+    assert(cpu->z == 0);
+    assert(cpu->i == 0);
+    assert(cpu->d == 0);
+    assert(cpu->b == 0);
+    assert(cpu->v == 0);
+    assert(cpu->n == 1);
+}
+
+void
+test_3(struct Cpu *cpu, struct Mem *mem)
+{
+    reset(cpu, mem);
+
+    // 9 cycles.
+    cpu->x = 5;
+
+    mem->data[0xfffc] = cpu->ins_lda_zpx;
+    mem->data[0xfffd] = 0x42;;
+    mem->data[0x0047] = 0x37;
+
+    execute(cpu, mem, 4);
+
+    assert(cpu->a == 0x37);
+    assert(cpu->c == 0);
+    assert(cpu->z == 0);
+    assert(cpu->i == 0);
+    assert(cpu->d == 0);
+    assert(cpu->b == 0);
+    assert(cpu->v == 0);
+    assert(cpu->n == 0);
+}
+
+void
+test_4(struct Cpu *cpu, struct Mem *mem)
+{
+    reset(cpu, mem);
+
+    // 9 cycles.
+    cpu->x = 0xff;
+
+    mem->data[0xfffc] = cpu->ins_lda_zpx;
+    mem->data[0xfffd] = 0x80;;
+    mem->data[0x007f] = 0x37;
+
+    execute(cpu, mem, 4);
+
+    assert(cpu->a == 0x37);
+    assert(cpu->c == 0);
+    assert(cpu->z == 0);
+    assert(cpu->i == 0);
+    assert(cpu->d == 0);
+    assert(cpu->b == 0);
+    assert(cpu->v == 0);
+    assert(cpu->n == 0);
+}
+
+
+/* void */
+/* test_4(struct Cpu *cpu, struct Mem *mem) */
+/* { */
+/*     reset(cpu, mem); */
+
+/*     // 9 cycles. */
+/*     mem->data[0xfffc] = cpu->ins_jsr; */
+/*     mem->data[0xfffd] = 0x42; */
+/*     mem->data[0xfffe] = 0x42; */
+/*     mem->data[0x4242] = cpu->ins_lda_im; */
+/*     mem->data[0x4243] = 0x84; */
+
+/*     execute(cpu, mem, 10); */
+
+/*     assert(cpu->a == 0x86); */
+/* } */
+
 
 int
 main(void)
@@ -183,22 +283,13 @@ main(void)
     struct Mem mem;
     struct Cpu cpu;
 
-    reset(&cpu, &mem);
+    test_1(&cpu, &mem);
 
+    test_2(&cpu, &mem);
 
-    // 3 cycles.
-    /* mem.data[0xfffc] = cpu.ins_lda_zp; */
-    /* mem.data[0xfffd] = 0x42; */
-    /* mem.data[0x0042] = 0x84; */
+    test_3(&cpu, &mem);
 
-    // 9 cycles.
-    /* mem.data[0xfffc] = cpu.ins_jsr; */
-    /* mem.data[0xfffd] = 0x42; */
-    /* mem.data[0xfffe] = 0x42; */
-    /* mem.data[0x4242] = cpu.ins_lda_im; */
-    /* mem.data[0x4243] = 0x84; */
-
-    execute(&cpu, &mem, 2);
+    test_4(&cpu, &mem);
 
     return 0;
 }
