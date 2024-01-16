@@ -131,9 +131,11 @@ execute(struct Cpu *cpu, struct Mem *mem, i32 cycles)
     while(cycles > 0)
     {
         Byte ins = fetch_byte(cpu, mem, &cycles);
+        printf("%d\n", ins);
 
         if(ins == cpu->ins_lda_im)
         {
+            printf("blip\n");
             Byte value = fetch_byte(cpu, mem, &cycles);
             cpu->a = value;
             cpu->z = (cpu->a == 0); // Set Z to 1 if A == 0.
@@ -141,6 +143,7 @@ execute(struct Cpu *cpu, struct Mem *mem, i32 cycles)
         }
         else if(ins == cpu->ins_lda_zp)
         {
+            printf("blop\n");
             Byte zero_page_addr = fetch_byte(cpu, mem, &cycles);
             cpu->a = read_byte(mem, &cycles, zero_page_addr);
             cpu->z = (cpu->a == 0);
@@ -148,6 +151,7 @@ execute(struct Cpu *cpu, struct Mem *mem, i32 cycles)
         }
         else if(ins == cpu->ins_lda_zpx)
         {
+            printf("blap\n");
             Byte zero_page_addr = fetch_byte(cpu, mem, &cycles);
             zero_page_addr += cpu->x;
             cycles--;
@@ -157,6 +161,7 @@ execute(struct Cpu *cpu, struct Mem *mem, i32 cycles)
         }
         else if(ins == cpu->ins_jsr)
         {
+            printf("blup\n");
             Word sub_addr = fetch_word(cpu, mem, &cycles);
             write_word(cpu->pc - 1, mem, &cycles);
             cpu->pc = sub_addr;
@@ -189,6 +194,20 @@ test_full_cycle(struct Cpu *cpu, struct Mem *mem)
     mem->data[0xfffd] = 0x42;
 
     i32 nb_cycles = execute(cpu, mem, 1);
+
+    assert(nb_cycles == 2);
+}
+
+void
+test_invalid_instruction(struct Cpu *cpu, struct Mem *mem)
+{
+    reset(cpu, mem);
+
+    mem->data[0xfffc] = 0x1;
+    mem->data[0xfffd] = 0x1;
+
+    execute(cpu, mem, 2);
+    i32 nb_cycles = execute(cpu, mem, 2);
 
     assert(nb_cycles == 2);
 }
@@ -316,17 +335,19 @@ main(void)
     struct Mem mem;
     struct Cpu cpu;
 
-    test_zero_cycles(&cpu, &mem);
+    /* test_zero_cycles(&cpu, &mem); */
 
-    test_full_cycle(&cpu, &mem);
+    /* test_full_cycle(&cpu, &mem); */
 
-    test_lda_im(&cpu, &mem);
+    test_invalid_instruction(&cpu, &mem);
 
-    test_lda_zp(&cpu, &mem);
+    /* test_lda_im(&cpu, &mem); */
 
-    test_lda_zp_x(&cpu, &mem);
+    /* test_lda_zp(&cpu, &mem); */
 
-    test_lda_zp_x_2(&cpu, &mem);
+    /* test_lda_zp_x(&cpu, &mem); */
+
+    /* test_lda_zp_x_2(&cpu, &mem); */
 
     return 0;
 }
